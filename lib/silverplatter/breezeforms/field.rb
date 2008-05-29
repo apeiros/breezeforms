@@ -21,6 +21,8 @@ module SilverPlatter
 				def create(*args, &block)
 					element = Class.new(self)
 					element.init(*args, &block)
+					element.extend Adaptors::Adaptors[element.expects]
+					element.extend Validators::Validators[element.expects]
 					element
 				end
 				
@@ -58,9 +60,6 @@ module SilverPlatter
 					
 					raise ArgumentError, "Name must be given" unless @name
 					raise ArgumentError, "Unknown options #{opt.keys.map { |k| k.inspect }.join(', ')}" unless opt.empty?
-
-					extend Adaptors::Adaptors[@expects]
-					extend Validators::Validators[@expects]
 				end
 				
 				def attributes(*args)
@@ -81,16 +80,17 @@ module SilverPlatter
 					@on_error
 				end
 				
-				def named name
+				def named(name)
 					@attributes[:name] = name
 				end
 				
-				def defaults_to value
+				def defaults_to(value)
 					@default = value
 				end
 	
-				def expecting klass
-					@expect  = klass
+				def expects(*klass)
+					@expects = klass.first unless klass.empty?
+					@expects
 				end
 
 				def validates_if *args, &block
@@ -229,6 +229,8 @@ module SilverPlatter
 				end
 			end
 
+			# The attributes for this field with all modifications by on_error/on_valid etc.
+			# applied.
 			def attributes
 				@attributes ||= begin
 					attributes = definition.attributes.dup

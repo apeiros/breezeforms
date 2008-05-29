@@ -4,7 +4,7 @@ require 'silverplatter/breezeforms'
 include SilverPlatter::BreezeForms
 
 def i(*args)
-	p args
+	puts(args.map { |e| e.inspect }.join(', '))
 end
 
 class MyForm < Form
@@ -27,7 +27,7 @@ class MyForm < Form
 		
 		text :birthyear do
 			expects Integer
-			validates_if :min => 1900, :max => proc { Time.now.year - 5 }
+			validates_if :min => 1900, :max => (Time.now.year-5) # proc { Time.now.year - 5 }
 		end
 		
 		select :birthmonth do
@@ -60,6 +60,7 @@ form.validate(
 	:birthmonth => "3"
 )
 
+i :field_ancestors, *(class <<MyForm[:birthyear];self;end).ancestors.first(3)
 i :has_field, MyForm.has_field?("first_name") # avoid memleak by to_sym'ing non-existant fields
 i :available, form.available?
 i :valid, form.valid?

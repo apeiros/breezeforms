@@ -46,13 +46,13 @@ module SilverPlatter
 				end
 				
 				def select(name, *args, &block)
-					#@form[name] = Select.create(name, *args)
+					#@form[name] = Select.create(name, *args, &block)
 				end
 				def button
-					@form[name] = Button.create(name, *args)
+					@form[name] = Button.create(name, *args, &block)
 				end
 				def textarea(name, *args, &block)
-					@form[name] = Textarea.create(name, *args)
+					@form[name] = Textarea.create(name, *args, &block)
 				end
 				
 				# ------------------------------------------------------------
@@ -60,7 +60,7 @@ module SilverPlatter
 				# ------------------------------------------------------------
 				
 				def input(type, name, *args, &block)
-					@form[name] = Input.create(type, name, *args)
+					@form[name] = Input.create(type, name, *args, &block)
 				end
 				
 				# Create an <input type="text" /> tag, see SilverPlatter::BreezeForms::Input::new
