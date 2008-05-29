@@ -1,0 +1,6 @@
+phase 1: primitive forms with validation
+phase 2: optional javascript validation, probably some AJAX
+phase 3: multipage-forms (aka wizards or ape-forms)
+phase 4: bridging to DataMapper/Sequel/M4DBI to automatically generate the formdescription
+
+phase 1 & 2 I need for my project, so they will be done in a stable way within the next 2 weeks (phase 1 should be done monday evening)
