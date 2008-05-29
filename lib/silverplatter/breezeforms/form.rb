@@ -8,6 +8,7 @@
 
 require 'silverplatter/breezeforms/dsl/withfields'
 require 'silverplatter/breezeforms/dsl/onerrororvalid'
+require 'silverplatter/breezeforms/generator'
 require 'silverplatter/breezeforms/input'
 require 'silverplatter/breezeforms/textarea'
 require 'silverplatter/breezeforms/button'
@@ -155,6 +156,8 @@ module SilverPlatter
 				end
 			end # <<Form
 
+			IndentString    = "\t".freeze
+
 			alias form class
 			#MultipostPreventionField = Input.hidden :prevent_multipost do
 			#	defaults_to { Digest::MD5.hexdigest("#{Time.now}#{$$}") }
@@ -173,7 +176,11 @@ module SilverPlatter
 					process
 				end
 			end
-			
+
+			def [](name)
+				@fields[name]
+			end
+		
 			# A form is available if at least one field of it was submitted
 			def available?
 				@available
@@ -238,7 +245,7 @@ module SilverPlatter
 				attributes = attributes.map { |key, value| "#{key}=\"#{value.to_s.escape_html}\"" }.join(" ")
 				start_tag  = "#{indent_str*indent if indent}<form #{attributes}>"
 				if block_given? then
-					start_tag + yield + "</form>"
+					start_tag + yield(Generator.new(self)) + "</form>"
 				else
 					start_tag
 				end

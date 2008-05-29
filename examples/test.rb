@@ -65,3 +65,5 @@ i :available, form.available?
 i :valid, form.valid?
 i :erroneous, form.erroneous?
 i :fields, form.to_hash
+puts(form.to_html { |e| ["", e.first_name, e.last_name, e.birthyear, ""].join("\n") })
+# , e.birthmonth
