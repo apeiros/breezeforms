@@ -45,12 +45,17 @@ module SilverPlatter
 					@on_valid = OnErrorOrSuccess.new(&block).__hash__
 				end
 				
+				# Create a <select> tag
 				def select(name, *args, &block)
-					#@form[name] = Select.create(name, *args, &block)
+					@form[name] = Select.create(name, *args, &block)
 				end
+				
+				# Create a <button> tag
 				def button
 					@form[name] = Button.create(name, *args, &block)
 				end
+				
+				# Create a <textarea> tag
 				def textarea(name, *args, &block)
 					@form[name] = Textarea.create(name, *args, &block)
 				end

@@ -249,9 +249,15 @@ module SilverPlatter
 							attributes[:class] = "#{attributes[:class]} #{definition.on_valid[:add_class]}".strip
 						end
 					end
+					attributes["name"] = definition.html_name
 					attributes
 				end
 			end
+			
+			def to_html(indent=nil, indent_str=nil)
+				raise "not implemented"
+			end
+			alias to_s to_html
 			
 			def inspect #:nodoc:
 				sprintf InspectInstance,

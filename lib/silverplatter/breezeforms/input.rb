@@ -38,7 +38,6 @@ module SilverPlatter
 				# Used by Input::create
 				def init(type=nil, name=nil, opt=nil, &block) # :nodoc:
 					@type         = type
-					@field_type   = "Input:#{@type}".freeze
 					opt           = {
 						:expecting          => String,
 						:prefixed           => "".freeze,
@@ -52,6 +51,7 @@ module SilverPlatter
 					
 					super(name, opt, &block)
 					
+					@field_type   = "Input:#{@type}".freeze
 					raise ArgumentError.new("Type must be given") unless @type
 				end
 				
@@ -73,14 +73,12 @@ module SilverPlatter
 			def to_html(indent=0, indent_str=IndentString)
 				attributes = attributes().update({
 					"type"  => definition.type,
-					"name"  => definition.html_name,
 					"value" => html_value
 				}).map { |key, value|
 					"#{key}=\"#{value.to_s.escape_html}\""
 				}.join(" ")
 				"#{indent_str*indent if indent}<input #{attributes} />"
 			end
-			alias to_s to_html
 		end
 	end
 end

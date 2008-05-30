@@ -15,7 +15,7 @@ class MyForm < Form
 	)
 	
 	with_fields do
-		ignore :submit, :birthmonth
+		ignore :submit
 		
 		on_error do
 			add_class 'error'
@@ -27,12 +27,12 @@ class MyForm < Form
 		
 		text :birthyear do
 			expects Integer
-			validates_if :min => 1900, :max => (Time.now.year-5) # proc { Time.now.year - 5 }
+			validates_if :min => (Time.now.year-110), :max => (Time.now.year-5) # proc { Time.now.year - 5 }
 		end
 		
 		select :birthmonth do
 			expects Integer
-			values [
+			options [
 				["Please select one...", nil],
 				["----------", nil],
 				["January",    1],
@@ -66,5 +66,5 @@ i :available, form.available?
 i :valid, form.valid?
 i :erroneous, form.erroneous?
 i :fields, form.to_hash
-puts(form.to_html { |e| ["", e.first_name, e.last_name, e.birthyear, ""].join("\n") })
+puts(form.to_html { |e| ["", e.first_name, e.last_name, e.birthyear, e.birthmonth, ""].join("\n") })
 # , e.birthmonth

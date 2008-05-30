@@ -225,6 +225,7 @@ module SilverPlatter
 				end
 			end
 
+			# Render this form as HTML
 			def to_html(indent=0, indent_str=IndentString)
 				attributes = form.attributes.dup
 				if erroneous? then
@@ -245,7 +246,7 @@ module SilverPlatter
 				attributes = attributes.map { |key, value| "#{key}=\"#{value.to_s.escape_html}\"" }.join(" ")
 				start_tag  = "#{indent_str*indent if indent}<form #{attributes}>"
 				if block_given? then
-					start_tag + yield(Generator.new(self)) + "</form>"
+					start_tag + yield(Generator.new(self, indent+1)) + "</form>"
 				else
 					start_tag
 				end
