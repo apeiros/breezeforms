@@ -1,0 +1,4 @@
+TODO
+	* allow procs in the following places
+		* default value
+		* Select::options, Select#options
