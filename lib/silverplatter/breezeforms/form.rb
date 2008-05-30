@@ -75,20 +75,23 @@ module SilverPlatter
 		#   end
 		class Form
 			class <<self
-				attr_reader :name
-				attr_reader :fields
-
 				def inherited(by) # :nodoc:
 					by.init
 				end
 				
+				# The form name
+				attr_reader :name
+				
+				# The fields of the form
+				attr_reader :fields
+
+				# The prefix of this form (used for the names of fields)
+				attr_reader :prefix
+
 				# Called on inheritance (by Form.inherited)
 				# Initializes the forms data
 				attr_reader :ignore
 				
-				# All fields of this form
-				attr_reader :fields
-
 				def init # :nodoc:
 					@attributes        = {
 						:method => :post,
@@ -173,6 +176,9 @@ module SilverPlatter
 			#MultipostPreventionField = Input.hidden :prevent_multipost do
 			#	defaults_to { Digest::MD5.hexdigest("#{Time.now}#{$$}") }
 			#end
+			
+			# The errors this form had
+			attr_reader :errors
 
 			def initialize(fieldvalues=nil)
 				@fields_left = form.fields.dup
@@ -182,6 +188,11 @@ module SilverPlatter
 				@errors      = []
 
 				validate(fieldvalues) if fieldvalues
+			end
+			
+			# Delegates to the class' has_field?
+			def has_field?(name)
+				form.has_field?(name)
 			end
 
 			def [](name)
@@ -217,23 +228,21 @@ module SilverPlatter
 				fields.each { |name, value| validate_field(name, value) }
 				process
 			end
-			
+
+			def process
+				@fields_left.each { |name,_| validate_field(name, nil) }
+			end
+
 			def validate_field(name, value)
 				# raising instead of invalidating since this most likely means
 				# either a bug (typo?) in the form definition or somebody tries
 				# to hack the form (web)
-				raise "Unknown field #{name}" unless field = form[name]
+				raise "Unknown field #{name.inspect}" unless field = form[name]
 				field         = field.new(value)
 				@fields[name] = field
-				@available    = true
+				@available    = true unless value.nil?
 				@errors.concat(field.errors)
 				@fields_left.delete(name)
-			end
-			
-			def process
-				@fields_left.each { |name,_|
-					validate_field(name, nil)
-				}
 			end
 			
 			def to_hash

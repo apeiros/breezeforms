@@ -31,6 +31,11 @@ module SilverPlatter
 				value
 			end
 			
+			def not_empty(value)
+				raise ValidationError.new(:empty, value, 'max' => max) if value.empty?
+				value
+			end
+			
 			def is(value, thing)
 				send("is_#{thing}", value)
 			end

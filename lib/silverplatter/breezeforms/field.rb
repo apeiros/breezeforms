@@ -41,6 +41,9 @@ module SilverPlatter
 				
 				# The type of this field
 				attr_reader :field_type
+				
+				# The prefix (needed for formprocessing to associate the field with a form)
+				attr_accessor :prefix
 
 				# Used by Field::create
 				def init(name=nil, opt=nil, &block) # :nodoc:
@@ -65,7 +68,7 @@ module SilverPlatter
 				def attributes(*args)
 					until args.empty?
 						@attributes[args.shift] = true while args.first.kind_of?(Symbol)
-						@attributes.update(args.shift)
+						@attributes.update(args.shift) if args.first
 					end
 					@attributes
 				end
@@ -94,7 +97,10 @@ module SilverPlatter
 				end
 
 				def validates_if *args, &block
-					@validates_if = args[0] unless args.empty? 
+					until args.empty?
+						@validates_if[args.shift] = [] while args.first.kind_of?(Symbol)
+						@validates_if.update(args.shift) if args.first
+					end
 					@validator    = block
 				end
 

@@ -24,7 +24,10 @@ module SilverPlatter
 		def has_form(name, &block)
 			name = name.to_sym
 			form = Class.new(Form)
-			form.instance_variable_set(:@name, name)
+			form.instance_eval {
+				@name   = name
+				@prefix = "#{name}.".freeze
+			}
 			form.class_eval(&block)
 			@forms[name] = form
 		end
@@ -36,7 +39,11 @@ module SilverPlatter
 			prefix = /#{name}\./
 			form   = @forms[name].new
 			request.params.each do |key, value|
-				form.validate_field(key.sub(prefix, EmptyString), value) if key =~ prefix
+				if key =~ prefix then
+					name = key.sub(prefix, EmptyString)
+					name = name.to_sym if form.has_field?(name)
+					form.validate_field(name, value)
+				end
 			end
 			form.process
 			form

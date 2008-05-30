@@ -20,7 +20,11 @@ module SilverPlatter
 		end
 			
 		def to_s
-			@reason
+			@reason.to_s
+		end
+		
+		def to_str
+			@reason.to_s
 		end
 	end
 end

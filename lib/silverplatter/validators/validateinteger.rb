@@ -32,6 +32,21 @@ module SilverPlatter
 				value
 			end
 			alias smaller max_exclusive
+			
+			def natural(value)
+				raise ValidationError.new(:too_small, value, 'max' => max) if value < 0
+				value
+			end
+			
+			def positive(value)
+				raise ValidationError.new(:too_small, value, 'max' => max) if value <= 0
+				value
+			end
+			
+			def negative(value)
+				raise ValidationError.new(:too_big, value, 'max' => max) if value >= 0
+				value
+			end
 		end
 	
 		Validators[Integer] = ValidateInteger
