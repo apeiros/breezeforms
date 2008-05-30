@@ -32,7 +32,6 @@ module SilverPlatter
 					super(name, opt, &block)
 					
 					@field_type   = "Textarea".freeze
-					raise ArgumentError.new("Type must be given") unless @type
 				end
 				
 				def inspect # :nodoc:

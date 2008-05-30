@@ -38,7 +38,7 @@ module SilverPlatter
 			request.params.each do |key, value|
 				form.validate_field(key.sub(prefix, EmptyString), value) if key =~ prefix
 			end
-			form.validate
+			form.process
 			form
 		end
 

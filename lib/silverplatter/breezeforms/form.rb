@@ -78,14 +78,18 @@ module SilverPlatter
 				attr_reader :name
 				attr_reader :fields
 
-				def inherited(by)
+				def inherited(by) # :nodoc:
 					by.init
 				end
 				
 				# Called on inheritance (by Form.inherited)
 				# Initializes the forms data
 				attr_reader :ignore
-				def init
+				
+				# All fields of this form
+				attr_reader :fields
+
+				def init # :nodoc:
 					@attributes        = {
 						:method => :post,
 					}
@@ -98,15 +102,22 @@ module SilverPlatter
 					@names             = {}
 				end
 				
+				# Set a field
+				# Name must be a Symbol
+				# Field should be an instance of a Field subclass
 				def []=(name, field)
 					@fields[name.to_sym] = field
 					@names[name.to_s]    = true
 				end
 				
+				# Access a field
+				# Name must be a Symbol
 				def [](name)
 					@fields[name]
 				end
 				
+				# Test whether a field is present. Name can be a String
+				# or a Symbol
 				def has_field?(name)
 					@names[name.to_s]
 				end
@@ -164,17 +175,13 @@ module SilverPlatter
 			#end
 
 			def initialize(fieldvalues=nil)
-				@attributes = form.attributes
-				@fields     = {}
-				@available  = fieldvalues && fieldvalues.any? { |k,v| v }
-				@errors     = []
-				@valid      = @available && @errors.empty?
-				if fieldvalues then
-					fieldvalues.each { |k,v|
-						@fields[k] = form[k].new(v)
-					}
-					process
-				end
+				@fields_left = form.fields.dup
+				@attributes  = form.attributes
+				@fields      = {}
+				@available   = false
+				@errors      = []
+
+				validate(fieldvalues) if fieldvalues
 			end
 
 			def [](name)
@@ -191,7 +198,7 @@ module SilverPlatter
 			# * all required fields are submitted
 			# * all submitted values are valid
 			def valid?
-				@errors.empty?
+				@available && @errors.empty?
 			end
 			
 			# A form is erroneous if the form is all of the following:
@@ -207,14 +214,26 @@ module SilverPlatter
 
 			def validate(fields)
 				form.ignore.each { |name| fields.delete(name) }
-				fields.each { |name, value|
-					raise "Unknown field #{name}" unless field = form[name]
-					@fields[name] = field.new(value)
-				}
+				fields.each { |name, value| validate_field(name, value) }
 				process
 			end
 			
+			def validate_field(name, value)
+				# raising instead of invalidating since this most likely means
+				# either a bug (typo?) in the form definition or somebody tries
+				# to hack the form (web)
+				raise "Unknown field #{name}" unless field = form[name]
+				field         = field.new(value)
+				@fields[name] = field
+				@available    = true
+				@errors.concat(field.errors)
+				@fields_left.delete(name)
+			end
+			
 			def process
+				@fields_left.each { |name,_|
+					validate_field(name, nil)
+				}
 			end
 			
 			def to_hash

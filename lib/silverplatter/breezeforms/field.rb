@@ -255,9 +255,13 @@ module SilverPlatter
 			end
 			
 			def to_html(indent=nil, indent_str=nil)
-				raise "not implemented"
+				raise "not implemented for #{definition.field_type}"
 			end
-			alias to_s to_html
+
+			# Alias for to_html
+			def to_s(*args, &block)
+				to_html(*args, &block)
+			end
 			
 			def inspect #:nodoc:
 				sprintf InspectInstance,
