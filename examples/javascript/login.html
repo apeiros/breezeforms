@@ -11,6 +11,11 @@
 $(document).ready(function() {
 	$('.description').addClass("hidden");
 	var form = new Form('register', {
+		on_reset: function() {
+			this.node().parents('tr').removeClass("error");
+			this.node().parents('tr').removeClass("missing");
+			this.node().parents('tr').find('.description').addClass("hidden");
+		},
 		on_erroneous: function() {
 			this.node().parents('tr').addClass("error");
 			this.node().parents('tr').find('.description').removeClass("hidden");
@@ -60,7 +65,7 @@ $(document).ready(function() {
 		}
 	});
 });
-	</script>
+</script>
 	<style type="text/css" media="screen">
 * {
 	margin: 0;

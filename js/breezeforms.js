@@ -2,13 +2,14 @@ function Field(form, name, description) {
 	var field          = this;
 	this._form         = form;
 	this._name         = name;
-	this._valid        = false;
 	this._available    = false;
 	this._node         = $('[@name="'+form.name()+'.'+name+'"]');
 	this._expects      = description.expects;
 	this._validates_if = description.validates_if;
 	this._value        = null;
 	this._special      = new Array();
+	this._required     = !(description.optional || description.required === false);
+	this._valid        = !this._required;
 
 	this.form          = function() { return(this._form); };
 	this.name          = function() { return(this._name); };
@@ -19,10 +20,27 @@ function Field(form, name, description) {
 	this.validates_if  = function() { return(this._validates_if); };
 	this.value         = function() { return(this._value); };
 	this.valid         = function() {	return(this._available && this._valid); };
-	this.erroneous     = function() {	return(this._available && (!this._valid)); };
-	this.on_valid      = description.on_valid;
-	this.on_erroneous  = description.on_erroneous;
-	this.on_missing    = description.on_missing;
+	this.erroneous     = function() {	return(this._available && !this._valid); };
+	this.required      = function() { return(this._required); };
+	this._on_reset     = description.on_reset;
+	this._on_erroneous = description.on_erroneous;
+	this._on_valid     = description.on_valid;
+	this._on_missing   = description.on_missing;
+	this.on_reset      = function() {
+		if (this._on_reset) { this._on_reset(); };
+	};
+	this.on_valid      = function() {
+		this.on_reset();
+		if (this._on_valid) { this._on_valid(); };
+	};
+	this.on_erroneous  = function() {
+		this.on_reset();
+		if (this._on_erroneous) { this._on_erroneous(); };
+	};
+	this.on_missing    = function() {
+		this.on_reset();
+		if (this._on_missing) { this._on_missing(); };
+	};
 	if (description.confirms) {
 		this._special[this._special.length] = {
 			test: 'confirm',
@@ -30,8 +48,12 @@ function Field(form, name, description) {
 		};
 	};
 
+	this.empty         = function() {
+		return(!this._value || this._value == "");
+	};
 	this.adapt         = function() {
 		this._value = Adaptors[this._expects](this._value);
+		return true;
 	};
 	this.validate      = function() {
 		var valid = true;
@@ -62,49 +84,91 @@ function Field(form, name, description) {
 	this.is_available  = function() { this._available = true; };
 	
 	this._node.change(function() {
-		field.is_available();
 		field.set_value(field.node().attr("value"));
+		field.is_available();
+		if (!field.required() && (!field.value() || field.value() == "")) {
+			field.on_reset();
+			return;
+		};
 		field.adapt();
 		field.validate();
 		if (field.valid()) {
-			if (field.on_valid) {
-				field.on_valid();
-			}
+			field.on_valid();
 		} else if (field.erroneous()) {
-			if (field.on_erroneous) {
-				field.on_erroneous();
-			}
-		}
+			field.on_erroneous();
+		};
 	});
 }
 
 function Form(name, description) {
 	var form        = this;
 
+	this._node      = $('form[@name="'+name+'"]');
 	this._name      = name;
 	this._fields    = new Array()
-	this._errors    = new Array();
+	this._valid     = false;
 	this._available = false;
 
 	this.name       = function() { return(this._name); };
 	this.fields     = function() { return(this._fields); };
 	this.errors     = function() { return(this._errors); };
 	this.available  = function() { return(this._available); };
-	this.valid      = function() {
-		return(this._available && this._errors.empty());
+	this.valid      = function() { return(this._available && this._valid); };
+	this.erroneous  = function() { return(this._available && !this._valid); };
+
+	this.field      = function(name) { return(this._fields[name]); };
+	this.validate   = function() {
+		var valid = true;
+		for (i=0; i < this._fields.length; i++) {
+			try {
+				field = this._fields[i];
+				field.validate();
+				if (!field.valid()) {
+					valid = false;
+					break;
+				};
+			} catch(e) {
+				alert("Error validating "+field.name()+"\n"+e);
+			};
+		};
+		this._valid = valid;
 	};
-	this.erroneous  = function() {
-		return(this._available && !(this._errors.empty()));
-	};
-	this.field      = function(name) {
-		return(this._fields[name]);
-	};
+	
+	this._node.submit(function() {
+		try {
+			form.validate();
+			if (form.valid()) {
+				alert("The form is valid.")
+				return false; // FIXME set to true later
+			} else {
+				fields = form.fields();
+				for (name in fields) {
+					try {
+						field = form.field(name);
+						if (field.empty() && field.required()) {
+							if (field.on_missing) {
+								field.on_missing();
+							};
+						};
+					} catch(e) {
+						alert("Error processing "+field.name()+"\n"+e);
+					};
+				};
+				alert("The form is not valid. Please correct fields marked erroneous and fill in required fields.");
+				return false;
+			}
+		} catch(e) {
+			alert(e);
+			return false;
+		}
+	});
 
 	if (description.with_fields) {
 		fields       = description.with_fields;
 		on_erroneous = description.on_erroneous;
 		on_missing   = description.on_missing;
 		on_valid     = description.on_valid;
+		on_reset     = description.on_reset;
 		for (name in fields) {
 			desc = fields[name]
 			if (!desc.on_erroneous && on_erroneous) {
@@ -116,15 +180,18 @@ function Form(name, description) {
 			if (!desc.on_valid && on_valid) {
 				desc.on_valid = on_valid;
 			};
+			if (!desc.on_reset && on_reset) {
+				desc.on_reset = on_reset;
+			};
 			form._fields[name] = new Field(form, name, fields[name]);
 		};
 	};
 };
 
 Adaptors = {
-	"String": function(value) { return(value); },
+	"String":  function(value) { return(value); },
 	"Integer": function(value) { return(parseInt(value)); },
-	"Float": function(value) { return(parseFloat(value)); }
+	"Float":   function(value) { return(parseFloat(value)); }
 };
 
 Validators = {
