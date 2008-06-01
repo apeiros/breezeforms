@@ -1,0 +1,189 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+	<title>jsvalidations</title>
+	<meta name="generator" content="BBEdit 8.7" />
+	<script type="text/javascript" language="javascript1.5" charset="utf-8" src="/js/jquery.js"></script>
+	<script type="text/javascript" language="javascript1.5" charset="utf-8" src="/js/breezeforms.js"></script>
+	<script type="text/javascript" language="javascript1.5" charset="utf-8">
+$(document).ready(function() {
+	$('.description').addClass("hidden");
+	var form = new Form('register', {
+		on_erroneous: function() {
+			this.node().parents('tr').addClass("error");
+			this.node().parents('tr').find('.description').removeClass("hidden");
+		},
+		on_missing: function() {
+			this.node().parents('tr').addClass("missing");
+		},
+		on_valid: function() {
+			ele = this.node().parents('tr');
+			this.node().parents('tr').find('.description').addClass("hidden");
+			ele.removeClass("error");
+			ele.removeClass("missing");
+		},
+		with_fields: {
+			"username": {
+				expects: "String",
+				validates_if: {
+					min: 3,
+					match: /^\w+$/
+				}
+			},
+			"password": {
+				expects: "String",
+				validates_if: {
+					min: 8,
+					match: /^[A-Za-z0-9_]+$/ // add more characters
+				}
+			},
+			"confirm": {
+				expects: "String",
+				confirms: "password"
+			},
+			"age": {
+				optional: true,
+				expects: "Integer",
+				validates_if: {
+					min: 5,
+					max: 100
+				}
+			},
+			"birthmonth": {
+				optional: true
+			},
+			"agree": {
+				required: true
+			}
+		}
+	});
+});
+	</script>
+	<style type="text/css" media="screen">
+* {
+	margin: 0;
+	padding: 0;
+	font-family: sans-serif;
+	text-align: left;
+	font-weight: normal;
+}
+html {
+	background-color: #f9f9f9;
+}
+body {
+	padding: 2em;
+}
+a {
+	color: #0000ff;
+	text-decoration: none;
+}
+a:hover {
+	color: #6666ff;
+	text-decoration: underline;
+}
+h1,h2,h3,h4,h5,h6 {
+	margin-bottom: 1em;
+	color: #3333cc;
+}
+table {
+	border-collapse: collapse;
+	margin: 0 0 0.5em 0;
+}
+tr {
+	border-bottom: 1px dashed #ccc;
+}
+th {
+	padding: 0.8em 0.6em 0.8em 0.6em;
+	vertical-align: top;
+}
+td {
+	padding: 0.8em 0.6em 0.8em 0.6em;
+	vertical-align: top;
+}
+.required {
+	font-weight: bold;
+}
+.checkbox {
+	text-align: right;
+}
+.error {
+	color: #990000;
+	background-color: #ffcccc;
+}
+.error input {
+	background-color: #ff8888;
+}
+.missing {
+	background-color: #fff4cc;
+}
+.missing input {
+	background-color: #ffe999;
+}
+.hidden {
+	display: none;
+}
+	</style>
+</head>
+<body>
+
+<form method="post" accept-charset="utf-8" name="register" id="register">
+	<h1>Register</h1>
+	<table>
+		<tr>
+			<th class="required"><a href="#required">*</a>Username:</th>
+			<td><input name="register.username" type="text" tabindex="1" value=""/></td>
+			<td><p class="description">Min 3 chars, only A-Z, a-z, 0-9 are allowed</p></td>
+		</tr>
+		<tr>
+			<th class="required"><a href="#required">*</a>Password:</th>
+			<td><input name="register.password" type="password" tabindex="2" value="" /></td>
+			<td><p class="description">Min 8 chars, only A-Z, a-z, 0-9 are allowed</p></td>
+		</tr>
+		<tr>
+			<th class="required"><a href="#required">*</a>Confirm:</th>
+			<td><input name="register.confirm" type="password" tabindex="4" value="" /></td>
+			<td><p class="description">Must be identical to 'Password'</p></td>
+		</tr>
+		<tr>
+			<th>Age:</th>
+			<td><input name="register.age" type="text" tabindex="5" /></td>
+			<td><p class="description">Your age in years</p></td>
+		</tr>
+		<tr>
+			<th>Birthmonth:</th>
+			<td><select name="register.birthmonth" tabindex="6">
+				<option value="">Please choose:</option>
+				<option value="">---------------</option>
+				<option value="1">January</option>
+				<option value="2">February</option>
+				<option value="3">March</option>
+				<option value="4">April</option>
+				<option value="5">May</option>
+				<option value="6">June</option>
+				<option value="7">July</option>
+				<option value="8">August</option>
+				<option value="9">September</option>
+				<option value="10">October</option>
+				<option value="11">November</option>
+				<option value="12">December</option>
+			</select></td>
+			<td><p class="description">Please choose one of the options</p></td>
+		</tr>
+		<tr>
+			<td class="checkbox"><input name="register.agree" type="checkbox" tabindex="7" /></td>
+			<td class="required"><a href="#required">*</a>I accept the <a>Terms</a> of foobidoo</td>
+			<td><p class="description">You must agree to foobidoos terms in order to register</p></td>
+		</tr>
+		<tr>
+			<th> </th>
+			<td><input name="register.submit" type="submit" value="register" tabindex="8" /></td>
+			<td> </td>
+		</tr>
+	</table>
+	<p id="required">*Required field</p>
+</form>
+
+</body>
+</html>
