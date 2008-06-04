@@ -16,11 +16,14 @@ module SilverPlatter
 		EmptyString = "".freeze
 
 		def self.extended(obj)
-			obj.instance_variable_set(:@forms, {})
+			obj.instance_variable_set(:@breezeforms, {})
 		end
 
-		# Creates a new formclass with the given specification
-		# Returns the new class
+		# Creates a new formclass with the given specification (the
+		# specification is class evaled, basically this is the same as: 
+		#   Class.new(Form) do ... end
+		# Stores the class in @breezeforms in the receiver and returns
+		# the new class.
 		def has_form(name, &block)
 			name = name.to_sym
 			form = Class.new(Form)
@@ -29,31 +32,22 @@ module SilverPlatter
 				@prefix = "#{name}.".freeze
 			}
 			form.class_eval(&block)
-			@forms[name] = form
+			@breezeforms[name] = form
 		end
 
-		# process the form with the given name
-		# instanciates the Form class, sets the values and performs the validation
-		def process_form(name)
-			name   = name.to_sym
-			prefix = /#{name}\./
-			form   = @forms[name].new
-			request.params.each do |key, value|
-				if key =~ prefix then
-					name = key.sub(prefix, EmptyString)
-					name = name.to_sym if form.has_field?(name)
-					form.validate_field(name, value)
-				end
+		unless method_defined?(:process_form) then
+			# process the form with the given name
+			# instanciates the Form class, sets the values and performs the validation
+			def process_form(name)
+				raise "You have to require the correct adapter for your framework."
 			end
-			form.process
-			form
 		end
 
 		# process all known forms and return a hash with
 		# { formname => processedform }
 		def process_forms
 			result = {}
-			@forms.each_key { |name| result[name] = process_form(name) }
+			@breezeforms.each_key { |name| result[name] = process_form(name) }
 			result
 		end
 	end

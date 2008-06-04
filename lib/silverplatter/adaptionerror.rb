@@ -20,11 +20,11 @@ module SilverPlatter
 		end
 			
 		def to_s
-			@reason.to_s
+			"#{@reason} - #{@value.inspect} could not be adapted. #{@values.inspect}."
 		end
 
 		def to_str
-			@reason.to_s
+			"#{@reason} - #{@value.inspect} could not be adapted. #{@values.inspect}."
 		end
 	end
 end

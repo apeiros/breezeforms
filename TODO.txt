@@ -2,3 +2,5 @@ TODO
 	* allow procs in the following places
 		* default value
 		* Select::options, Select#options
+	* multiple form elements with the same name (js & ruby)
+		* checkboxes

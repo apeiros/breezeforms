@@ -51,10 +51,7 @@ module SilverPlatter
 			# Create an HTML tag for this Input.
 			# Also see html_value.
 			def to_html(indent=0, indent_str=IndentString)
-				attributes = attributes().map { |key, value|
-					"#{key}=\"#{value.to_s.escape_html}\""
-				}.join(" ")
-				start_tag = "#{indent_str*indent if indent}<button #{attributes}>"
+				start_tag = "#{indent_str*indent if indent}<button#{attributes.tag_attributes}>"
 				if block_given? then
 					start_tag + yield + "</button>"
 				else

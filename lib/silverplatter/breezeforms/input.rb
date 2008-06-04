@@ -55,6 +55,12 @@ module SilverPlatter
 					raise ArgumentError.new("Type must be given") unless @type
 				end
 				
+				def value(*val)
+					raise NoMethodError, "value method is not available for #{@type}" unless @type == :checkbox
+					@value = val.first unless val.empty?
+					@value
+				end
+				
 				def inspect # :nodoc:
 					sprintf InspectClass,
 						@field_type,
@@ -71,13 +77,11 @@ module SilverPlatter
 			# Create an HTML tag for this Input.
 			# Also see html_value.
 			def to_html(indent=0, indent_str=IndentString)
-				attributes = attributes().update({
+				attributes = attributes().merge({
 					"type"  => definition.type,
-					"value" => html_value
-				}).map { |key, value|
-					"#{key}=\"#{value.to_s.escape_html}\""
-				}.join(" ")
-				"#{indent_str*indent if indent}<input #{attributes} />"
+					"value" => definition.type == :checkbox ? definition.value : html_value
+				})
+				"#{indent_str*indent if indent}<input#{attributes.tag_attributes} />"
 			end
 		end
 	end

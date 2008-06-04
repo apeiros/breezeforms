@@ -2,7 +2,6 @@ function Field(form, name, description) {
 	var field          = this;
 	this._form         = form;
 	this._name         = name;
-	this._available    = false;
 	this._node         = $('[@name="'+form.name()+'.'+name+'"]');
 	this._expects      = description.expects;
 	this._validates_if = description.validates_if;
@@ -14,13 +13,12 @@ function Field(form, name, description) {
 	this.form          = function() { return(this._form); };
 	this.name          = function() { return(this._name); };
 	this.errors        = function() { return(this._errors); };
-	this.available     = function() { return(this._available); };
 	this.node          = function() { return(this._node); };
 	this.expects       = function() { return(this._expects); };
 	this.validates_if  = function() { return(this._validates_if); };
 	this.value         = function() { return(this._value); };
-	this.valid         = function() {	return(this._available && this._valid); };
-	this.erroneous     = function() {	return(this._available && !this._valid); };
+	this.valid         = function() {	return(this._valid); };
+	this.erroneous     = function() {	return(!this._valid); };
 	this.required      = function() { return(this._required); };
 	this._on_reset     = description.on_reset;
 	this._on_erroneous = description.on_erroneous;
@@ -49,7 +47,7 @@ function Field(form, name, description) {
 	};
 
 	this.empty         = function() {
-		return(!this._value || this._value == "");
+		return(!this._value);
 	};
 	this.adapt         = function() {
 		this._value = Adaptors[this._expects](this._value);
@@ -57,35 +55,69 @@ function Field(form, name, description) {
 	};
 	this.validate      = function() {
 		var valid = true;
-		for (v in this._validates_if) {
-			if (this._validates_if.hasOwnProperty(v)) {
-				validator = Validators[this._expects][v];
-				arg       = this._validates_if[v];
-				if (!validator) { throw("No validator "+v+" exists for "+this._expects) };
-				if (!validator(this._value, arg)) {
-					valid = false;
-					break;
-				}
-			}
-		};
-		for (i=0; i<this._special.length; i++) {
-			test = this._special[i].test;
-			args = this._special[i].args;
-			if (test == 'confirm') {
-				if (this._form.field(args).value() != this._value) {
-					valid = false;
-					break;
-				}
-			}
+		if (this._required || this._value) {
+			for (v in this._validates_if) {
+				if (this._validates_if.hasOwnProperty(v)) {
+					validator = Validators[this._expects][v];
+					arg       = this._validates_if[v];
+					if (!validator) { throw("No validator "+v+" exists for "+this._expects) };
+					if (!validator(this._value, arg)) {
+						valid = false;
+						break;
+					};
+				};
+			};
+			for (i=0; i<this._special.length; i++) {
+				test = this._special[i].test;
+				args = this._special[i].args;
+				if (test == 'confirm') {
+					if (this._form.field(args).value() != this._value) {
+						valid = false;
+						break;
+					};
+				};
+			};
 		};
 		this._valid = valid;
 	};
 	this.set_value     = function(value) { this._value = value; };
-	this.is_available  = function() { this._available = true; };
 	
-	this._node.change(function() {
-		field.set_value(field.node().attr("value"));
-		field.is_available();
+	var tagname        = this._node.get(0).tagName.toLowerCase();
+	if (tagname == 'input') {
+		var type = this._node.attr("type").toLowerCase();
+		if (type == 'text' || type == 'password' || type == 'hidden') {
+			this.submit_value = function() {
+				return(this._node.attr("value"));
+			};
+		} else if (type == 'checkbox') {
+			this.submit_value = function() {
+				return(this._node.attr("checked") && this._node.attr("value"));
+			};
+		} else if (type == 'radio') {
+			this.submit_value = function() {
+				return(this._node.val());
+			};
+		};
+	} else if (tagname == 'textarea') {
+		this.submit_value = function() {
+			return(this._node.val());
+		};
+	} else if (tagname == 'select') {
+		this.submit_value = function() {
+			return(this._node.val());
+		};
+	} else if (tagname == 'button') {
+		this.submit_value = function() {
+			return(this._node.val());
+		};
+	} else {
+		this.submit_value = function() {
+			return(this._node.val());
+		};
+	};
+
+	this._node.bind('change', function() {
+		field.set_value(field.submit_value());
 		if (!field.required() && (!field.value() || field.value() == "")) {
 			field.on_reset();
 			return;
@@ -107,21 +139,20 @@ function Form(name, description) {
 	this._name      = name;
 	this._fields    = new Array()
 	this._valid     = false;
-	this._available = false;
 
 	this.name       = function() { return(this._name); };
 	this.fields     = function() { return(this._fields); };
 	this.errors     = function() { return(this._errors); };
-	this.available  = function() { return(this._available); };
-	this.valid      = function() { return(this._available && this._valid); };
-	this.erroneous  = function() { return(this._available && !this._valid); };
+	this.valid      = function() { return(this._valid); };
+	this.erroneous  = function() { return(!this._valid); };
 
 	this.field      = function(name) { return(this._fields[name]); };
 	this.validate   = function() {
 		var valid = true;
-		for (i=0; i < this._fields.length; i++) {
+		for (field in this._fields) {
+			if (!this._fields.hasOwnProperty(field)) { continue; };
 			try {
-				field = this._fields[i];
+				field = this._fields[field];
 				field.validate();
 				if (!field.valid()) {
 					valid = false;
@@ -134,12 +165,12 @@ function Form(name, description) {
 		this._valid = valid;
 	};
 	
-	this._node.submit(function() {
+	this._node.bind('submit', function() {
 		try {
 			form.validate();
 			if (form.valid()) {
-				alert("The form is valid.")
-				return false; // FIXME set to true later
+				alert("form is valid");
+				return true;
 			} else {
 				fields = form.fields();
 				for (name in fields) {
@@ -154,7 +185,7 @@ function Form(name, description) {
 						alert("Error processing "+field.name()+"\n"+e);
 					};
 				};
-				alert("The form is not valid. Please correct fields marked erroneous and fill in required fields.");
+				alert("Please correct fields marked erroneous (red) and fill in required fields (yellow).");
 				return false;
 			}
 		} catch(e) {

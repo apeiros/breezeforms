@@ -67,18 +67,30 @@ module SilverPlatter
 			# Create an HTML tag for this Input.
 			# Also see html_value.
 			def to_html(indent=0, indent_str=IndentString)
-				indent += 1 if indent
-				attributes = attributes().map { |key, value|
-					"#{key}=\"#{value.to_s.escape_html}\""
-				}.join(" ")
-				"#{indent_str*(indent-1) if indent}<select #{attributes}>\n" +
+				if indent then
+					if indent < 0 then
+						start_indent  = 0
+						end_indent    = indent.abs-1
+						indent        = indent.abs
+					else
+						start_indent  = indent
+						end_indent    = indent
+						indent       += 1
+					end
+				else
+					start_indent = 0
+					end_indent   = 0
+					indent       = 0
+				end
+
+				"#{indent_str*start_indent}<select#{attributes.tag_attributes}>\n"+
 				options.map { |lab, val|
-					"#{indent_str*indent if indent}" \
+					"#{indent_str*indent}" \
 					"<option value=\"#{val.to_s.escape_html}\">" \
 					"#{lab.to_s.escape_html}" \
 					"</option>"
 				}.join("\n") +
-				"\n#{indent_str*(indent-1) if indent}</select>"
+				"\n#{indent_str*end_indent}</select>"
 			end
 		end
 	end

@@ -15,7 +15,7 @@ module SilverPlatter
 				return value if Integer === value
 				Integer(value.gsub(ignore,""))
 			rescue => e
-				AdaptionError.new(:not_adaptable, value, :exception => e.inspect)
+				raise AdaptionError.new(:not_adaptable, value, :exception => e.inspect)
 			end
 		end
 	end

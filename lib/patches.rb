@@ -1,10 +1,15 @@
 require 'cgi'
 
 
-
-module Ramaze
-	class Controller
-		alias controller class
+module HashHelper
+	EmptyString = ''.freeze
+	
+	# Converts the hash to a list of attributes
+	# with a leading space, so you can use it like:
+	# "<foo#{attr_hash.tag_attributes}>" # => '<foo bar="baz">
+	# keys and values must respond to to_s.
+	def tag_attributes
+		map { |k,v| %{ #{k}="#{::CGI.escapeHTML(v.to_s)}"} }.join(EmptyString)
 	end
 end
 
@@ -16,6 +21,16 @@ end
 
 class String
 	include StringHelper
+end
+
+class Hash
+	include HashHelper
+end
+
+module Ramaze
+	class Controller
+		alias controller class
+	end
 end
 
 module Sequel

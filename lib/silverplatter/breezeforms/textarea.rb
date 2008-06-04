@@ -50,10 +50,7 @@ module SilverPlatter
 			# Create an HTML tag for this Input.
 			# Also see html_value.
 			def to_html(indent=0, indent_str=IndentString)
-				attributes = attributes().map { |key, value|
-					"#{key}=\"#{value.to_s.escape_html}\""
-				}.join(" ")
-				"#{indent_str*indent if indent}<textarea #{attributes}>#{html_value.escape_html}</textarea>"
+				"#{indent_str*indent if indent}<textarea#{attributes.tag_attributes}>#{html_value.escape_html}</textarea>"
 			end
 		end
 	end

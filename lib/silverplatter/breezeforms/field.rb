@@ -42,21 +42,33 @@ module SilverPlatter
 				# The type of this field
 				attr_reader :field_type
 				
+				# :nodoc:	
+				attr_reader :validator
+
 				# The prefix (needed for formprocessing to associate the field with a form)
 				attr_accessor :prefix
+				
 
 				# Used by Field::create
 				def init(name=nil, opt=nil, &block) # :nodoc:
+					raise "Must not have :required and :optional both set" if opt.has_key?(:required) && opt.has_key?(:optional)
 					@name         = name
 					@field_type   = "Abstract".freeze
+					@required     = true
+					if opt.has_key?(:required) then
+						@required     = !!opt.delete(:required)
+					elsif opt.has_key?(:optional) then
+						@required     = !opt.delete(:optional)
+					end
 					@prefix       = opt.delete(:prefixed)
-					@expects      = opt.delete(:expecting)
+					@expects      = opt.delete(:expecting) || String
 					@default      = opt.delete(:defaults_to)
-					@attributes   = opt.delete(:attributes)
+					@attributes   = opt.delete(:attributes) || {}
 					@on_error     = opt.delete(:on_error)
 					@on_valid     = opt.delete(:on_valid)
 					@fallback     = opt.delete(:falls_back_to)
-					@validates_if = opt.delete(:validates_if)
+					@confirms     = opt.delete(:confirms)
+					@validates_if = opt.delete(:validates_if) || {}
 					@validator    = opt.delete(:validator)
 
 					class_eval(&block) if block
@@ -64,7 +76,33 @@ module SilverPlatter
 					raise ArgumentError, "Name must be given" unless @name
 					raise ArgumentError, "Unknown options #{opt.keys.map { |k| k.inspect }.join(', ')}" unless opt.empty?
 				end
+
+				# set whether a field is required or not, also see optional
+				def required(val = true)
+					@required = !!val
+				end
+
+				# set whether a field is required or not, also see required
+				def optional(val = true)
+					@required = !val
+				end
+
+				# test whether a field is required or not
+				def required?
+					@required
+				end
 				
+				# test whether a field is required or not
+				def optional?
+					!@required
+				end
+
+				# 
+				def confirms(*field)
+					@confirms = field.first unless field.empty?
+					@confirms
+				end
+
 				def attributes(*args)
 					until args.empty?
 						@attributes[args.shift] = true while args.first.kind_of?(Symbol)
@@ -102,6 +140,7 @@ module SilverPlatter
 						@validates_if.update(args.shift) if args.first
 					end
 					@validator    = block
+					@validates_if
 				end
 
 				def fallback_value(value)
@@ -120,7 +159,7 @@ module SilverPlatter
 				def new(original) # :nodoc:
 					errors    = []
 					value     = nil
-					available = !original.nil? # false is a valid value
+					available = original && !original.empty? # false is a valid value
 					
 					if available then
 						begin
@@ -135,7 +174,8 @@ module SilverPlatter
 									errors << error
 									break
 								rescue NoMethodError
-									raise ArgumentError, "Invalid validation #{m} in definition of #{self}"
+									raise "[#{name}] #{m} with #{original.inspect}, #{value.inspect}, #{args.inspect}" if respond_to?(m)
+									raise ArgumentError, "Invalid validation #{m} in definition of #{self} (uses #{Validators::Validators[@expects]})"
 								end
 							}
 							if errors.empty? && @validator then
@@ -158,7 +198,13 @@ module SilverPlatter
 				def html_name
 					"#{@prefix}#{@name}"
 				end
-			end
+				
+				def inspect # :nodoc:
+					sprintf "#<Field(%s):%08x>",
+						@field_type,
+						object_id>>1
+				end
+			end #  <<Field
 
 			InspectInstance = "#<%s name=%p %s value=%p, original=%p, default=%p, fallback=%p>".freeze
 			IndentString    = "\t".freeze

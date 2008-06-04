@@ -6,8 +6,9 @@
 
 
 
-require 'silverplatter/breezeforms/dsl/withfields'
+require 'silverplatter/breezeforms/dsl/javascript'
 require 'silverplatter/breezeforms/dsl/onerrororvalid'
+require 'silverplatter/breezeforms/dsl/withfields'
 require 'silverplatter/breezeforms/generator'
 require 'silverplatter/breezeforms/input'
 require 'silverplatter/breezeforms/textarea'
@@ -99,10 +100,22 @@ module SilverPlatter
 					@fields            = {}
 					@prevent_multipost = false
 					@sessionized       = false
+					@auto_tabindex     = false
 					@on_valid          = {}
 					@on_error          = {}
 					@ignore            = []
 					@names             = {}
+					
+					@javascript        = Hash.new { |h,k|
+						raise ArgumentError, "Unknown javascript piece #{k}"
+					}.merge(
+						:attributes   => {:type => "text/javascript"},
+						:on_ready     => nil,
+						:on_reset     => nil,
+						:on_valid     => nil,
+						:on_erroneous => nil,
+						:on_missing   => nil
+					) # I would prefer a constant here but there's no deep_dup...
 				end
 				
 				# Set a field
@@ -128,6 +141,12 @@ module SilverPlatter
 				def add_ignore(*fields)
 					@ignore |= fields
 				end
+				
+				# The javascript properties of this form
+				def javascript(&block)
+					@javascript = DSL::Javascript.new(@javascript, &block).__hash__ if block
+					@javascript
+				end
 
 				def on_valid(&block)
 					@on_valid = DSL::OnErrorOrValid.new(&block).__hash__ if block
@@ -144,22 +163,41 @@ module SilverPlatter
 					DSL::WithFields.new(self, &block)
 				end
 				
+				# Prevents forms being processed multiple times. To
+				# be used in conjunction with Form#process
 				def prevent_multipost(val = true)
 					@prevent_multipost = val
 				end
 				
+				# Whether the prevent_multipost-flag is set
 				def prevent_multipost?
 					@prevent_multipost
 				end
 				
+				# Prevents forms being processed multiple times. To
+				# be used in conjunction with Form#process
+				def auto_tabindex(val = true)
+					@auto_tabindex = val
+				end
+				
+				# Whether the prevent_multipost-flag is set
+				def auto_tabindex?
+					@auto_tabindex
+				end
+				
+				# A sessionized form will store its data in the session,
+				# meaning that it won't "forget" the data if you don't complete
+				# the form and go onto another website inbetween.
 				def sessionized(val=true)
 					@sessionized=val
 				end
 				
+				# Whether the sessionized-flag is set
 				def sessionized?
 					@sessionized
 				end
 				
+				# The html attributes of the form-tag itself.
 				def attributes(*args)
 					until args.empty?
 						@attributes[args.shift] = true while args.first.kind_of?(Symbol)
@@ -245,6 +283,59 @@ module SilverPlatter
 				@fields_left.delete(name)
 			end
 			
+			def inline_javascript
+				javascript = form.javascript
+				attributes = javascript[:attributes].tag_attributes
+				on_ready   = javascript[:on_ready]
+				callbacks  = ""
+				with_fields = []
+
+				[:on_reset, :on_valid, :on_erroneous, :on_missing].each { |js|
+					if script = javascript[js] then
+						callbacks << <<-EOJS
+		#{js}: function() {
+#{script}
+		},
+						EOJS
+					end
+				}
+				
+				form.fields.each { |field, definition|
+					fdef         = []
+					validates_if = definition.validates_if
+					validates_if = validates_if.reject { |k,v|
+						validates_if.has_key?(:"js_#{k}")
+					}
+					validates_if.each   { |k,v|
+						validates_if[k.to_s.sub(/^js_/, '')] = validates_if.delete(k)
+					}
+					fdef << "expects: '#{definition.expects}'" if definition.expects
+					unless definition.validates_if.empty? then
+						fdef << "validates_if: {\n"+validates_if.map { |k,v|
+							"\t\t\t\t\t#{k}: #{v.inspect}"
+						}.join(",\n")+"\n\t\t\t\t}"
+					end
+					fdef << "required: #{definition.required?}"
+					fdef << "confirms: #{definition.confirms.to_s.inspect}" if definition.confirms
+					with_fields << %{\t\t\t'#{field}': {\n\t\t\t\t#{fdef.join(",\n\t\t\t\t")}\n\t\t\t}}
+				}
+				
+				<<-EOJS
+<script#{attributes}>
+$(document).ready(function() {
+#{on_ready}
+
+	var form = new Form('#{form.name}', {
+#{callbacks}
+		with_fields: {
+#{with_fields.join(",\n")}
+		}
+	});
+});
+</script>
+				EOJS
+			end
+			
 			def to_hash
 				@hash ||= begin
 					hash = {}
@@ -271,8 +362,7 @@ module SilverPlatter
 						attributes[:class] = "#{attributes[:class]} #{input.on_valid[:add_class]}".strip
 					end
 				end
-				attributes = attributes.map { |key, value| "#{key}=\"#{value.to_s.escape_html}\"" }.join(" ")
-				start_tag  = "#{indent_str*indent if indent}<form #{attributes}>"
+				start_tag  = %{#{indent_str*indent if indent}<form name="#{form.name}"#{attributes.tag_attributes}>}
 				if block_given? then
 					start_tag + yield(Generator.new(self, indent+1)) + "</form>"
 				else
