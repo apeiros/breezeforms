@@ -306,9 +306,11 @@ module SilverPlatter
 					validates_if = validates_if.reject { |k,v|
 						validates_if.has_key?(:"js_#{k}")
 					}
+					new = {}
 					validates_if.each   { |k,v|
-						validates_if[k.to_s.sub(/^js_/, '')] = validates_if.delete(k)
+						new[k.to_s.sub(/^js_/, '')] = validates_if.delete(k)
 					}
+					validates_if.merge! new
 					fdef << "expects: '#{definition.expects}'" if definition.expects
 					unless definition.validates_if.empty? then
 						fdef << "validates_if: {\n"+validates_if.map { |k,v|
